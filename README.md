@@ -1,3 +1,3 @@
 # FRC Trades
 
-big ol wip
+A game where you can bet on FRC matches
