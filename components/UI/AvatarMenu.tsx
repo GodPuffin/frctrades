@@ -72,28 +72,30 @@ export function AvatarMenu({ user }: { user: User | null }) {
           How to Play
         </Menu.Item>
         {/* <Menu.Item rightSection={<IconCalculator />} component={Link} href="/calculator">Calculator</Menu.Item> */}
-        <Menu.Item
-          rightSection={<IconLogout />}
-          onClick={async () => {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-              notifications.show({
-                title: "Error",
-                message: "Error signing out",
-                color: "red",
-              });
-            } else {
-              notifications.show({
-                title: "Success",
-                message: "You are now logged out",
-                color: "green",
-              });
-              window.location.href = "/";
-            }
-          }}
-        >
-          Sign Out
-        </Menu.Item>
+        {user && (
+          <Menu.Item
+            rightSection={<IconLogout />}
+            onClick={async () => {
+              const { error } = await supabase.auth.signOut();
+              if (error) {
+                notifications.show({
+                  title: "Error",
+                  message: "Error signing out",
+                  color: "red",
+                });
+              } else {
+                notifications.show({
+                  title: "Success",
+                  message: "You are now logged out",
+                  color: "green",
+                });
+                window.location.href = "/";
+              }
+            }}
+          >
+            Sign Out
+          </Menu.Item>
+        )}
       </Menu.Dropdown>
     </Menu>
   );

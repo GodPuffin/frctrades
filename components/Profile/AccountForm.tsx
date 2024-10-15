@@ -194,6 +194,8 @@ export default function AccountForm({ user }: { user: User | null }) {
               min={1}
               max={9999}
               mb="md"
+              allowDecimal={false}
+              allowNegative={false}
             />
             <Group justify="flex-end" mt="md">
               {handle && handle === user?.user_metadata.handle && (

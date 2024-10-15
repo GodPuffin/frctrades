@@ -78,6 +78,7 @@ export default function MatchPage(
     const [selectedAlliance, setSelectedAlliance] = useState<
         "red" | "blue" | null
     >(null);
+    const [isSignedIn, setIsSignedIn] = useState(false);
     const supabase = createClient();
     const router = useRouter();
 
@@ -140,9 +141,11 @@ export default function MatchPage(
 
             if (!session) {
                 console.warn("No active session");
-                router.push("/login");
+                setIsSignedIn(false);
                 return;
             }
+
+            setIsSignedIn(true);
 
             const { data: userData, error: userError } = await supabase
                 .from("users")
@@ -184,26 +187,61 @@ export default function MatchPage(
         setConfirmModalOpen(true);
     };
 
-    const handleConfirmBet = () => {
+    const handleConfirmBet = async () => {
         if (selectedAlliance) {
-            console.log(
-                `Bet placed on ${selectedAlliance.toUpperCase()} alliance for ${betValue}`,
-            );
-            showNotification({
-                title: "Bet Placed",
-                message: (
-                    <>
-                        You have placed a bet of{" "}
-                        <IconCoins
-                            size={16}
-                            style={{ marginLeft: "2px" }}
-                        />
-                        {betValue} on the {selectedAlliance.toUpperCase()}{" "}
-                        alliance.
-                    </>
-                ),
-                color: "green",
-            });
+            try {
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError) throw sessionError;
+                if (!session) throw new Error("No active session");
+
+                const { data, error } = await supabase
+                    .from('bets')
+                    .insert({
+                        user_id: session.user.id,
+                        match_key: params.match_key,
+                        alliance: selectedAlliance,
+                        amount: betValue,
+                        payout_multiplier: calculatePayout(selectedAlliance === "red" ? matchStats!.pred.red_win_prob : 1 - matchStats!.pred.red_win_prob)
+                    })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+
+                // Update user balance
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({ points: userBalance - betValue })
+                    .eq('id', session.user.id);
+
+                if (updateError) throw updateError;
+
+                setUserBalance(userBalance - betValue);
+                setBetValue(1);
+
+                showNotification({
+                    title: "Bet Placed",
+                    message: (
+                        <>
+                            You have placed a bet of{" "}
+                            <IconCoins
+                                size={16}
+                                style={{ marginLeft: "2px" }}
+                            />
+                            {betValue} on the {selectedAlliance.toUpperCase()}{" "}
+                            alliance.
+                        </>
+                    ),
+                    color: "green",
+                });
+            } catch (error) {
+                console.error("Error placing bet:", error);
+                showNotification({
+                    title: "Error",
+                    message: "Failed to place bet. Please try again.",
+                    color: "red",
+                });
+            }
         }
         setConfirmModalOpen(false);
         setSelectedAlliance(null);
@@ -445,7 +483,7 @@ export default function MatchPage(
                     )}
                 </Group>
 
-                {isBettingAllowed
+                {isSignedIn && isBettingAllowed
                     ? (
                         <>
                             <Container>
@@ -597,7 +635,7 @@ export default function MatchPage(
                     )
                     : (
                         <Text ta="center" fw={700} mt="xl" mb="xl">
-                            Betting is closed for this match
+                            {isSignedIn ? "Betting is closed for this match" : "Sign in to place bets"}
                         </Text>
                     )}
 

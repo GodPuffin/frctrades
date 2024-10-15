@@ -5,7 +5,6 @@ import {
   Avatar,
   Box,
   Button,
-  Center,
   Container,
   Group,
   Paper,
@@ -13,7 +12,7 @@ import {
   Title,
 } from "@mantine/core";
 import Link from "next/link";
-import { IconCoins, IconCrown, IconTrophy } from "@tabler/icons-react";
+import { IconBriefcase2, IconCoins, IconCrown } from "@tabler/icons-react";
 
 interface UserRankResult {
   rank: number;
@@ -134,7 +133,7 @@ export default async function PublicProfilePage(
       <Group justify="center" align="center">
         <Paper p="md" radius="md" withBorder shadow="xs">
           <Title order={2}>
-            <IconCoins size={28} />
+            <IconCoins size={28} style={{ marginRight: "10px", transform: "translateY(4px)" }} />
             {profileUser.points}
           </Title>
         </Paper>
@@ -144,6 +143,14 @@ export default async function PublicProfilePage(
             {userRank ? ` #${userRank}` : "N/A"}
           </Title>
         </Paper>
+        <Link href={`/portfolio/${profileUser.handle}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+          <Paper p="md" radius="md" withBorder shadow="xs">
+            <Title order={2} style={{ display: 'flex', alignItems: 'center' }}>
+              <IconBriefcase2 size={28} style={{ marginRight: '10px' }} />
+              Bets
+            </Title>
+          </Paper>
+        </Link>
       </Group>
       {isOwnProfile && (
         <Group justify="right" mt="xl">
