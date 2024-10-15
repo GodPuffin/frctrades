@@ -445,7 +445,7 @@ export default function MatchPage(
                     )}
                 </Group>
 
-                {!isBettingAllowed
+                {isBettingAllowed
                     ? (
                         <>
                             <Container>
