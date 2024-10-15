@@ -97,8 +97,7 @@ export function Navbar(
           </Group>
         </Group>
       </AppShell.Header>
-
-      <AppShell.Navbar py="md" px={4} onMouseLeave={() => toggle()}>
+      <AppShell.Navbar py="md" px={4} >
         <Divider my="sm" size="sm" label="User Info" />
         <SimpleGrid cols={2}>
           <NavLink
