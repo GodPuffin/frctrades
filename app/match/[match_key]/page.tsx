@@ -11,25 +11,25 @@ import {
     Flex,
     Grid,
     Group,
+    Modal,
+    NumberInput,
     Paper,
-    Progress,
     SimpleGrid,
     Skeleton,
+    Slider,
     Stack,
     Text,
     Title,
 } from "@mantine/core";
 import Link from "next/link";
 import {
-    IconCheck,
     IconChevronLeft,
     IconChevronRight,
     IconCoins,
     IconGripVertical,
 } from "@tabler/icons-react";
-import { clamp, useMediaQuery, useMove } from "@mantine/hooks";
+import { clamp, useMediaQuery } from "@mantine/hooks";
 import { showNotification } from "@mantine/notifications";
-import classes from "../slider.module.css";
 
 interface MatchStats {
     key: string;
@@ -71,29 +71,18 @@ export default function MatchPage(
     const [teamInfo, setTeamInfo] = useState<Record<string, TeamInfo>>({});
     const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
     const [loading, setLoading] = useState(true);
-    const [betValue, setBetValue] = useState(0.1);
+    const [betValue, setBetValue] = useState(1);
     const [userBalance, setUserBalance] = useState(0);
-    const [betAmount, setBetAmount] = useState(10);
     const [currentTime, setCurrentTime] = useState(Date.now());
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const [selectedAlliance, setSelectedAlliance] = useState<
+        "red" | "blue" | null
+    >(null);
     const supabase = createClient();
     const router = useRouter();
 
-    const { ref } = useMove(({ x }) => handleBetChange(x));
     const isMobile = useMediaQuery("(max-width: 768px)");
     const labelFloating = betValue < 0.2 || betValue > 0.8;
-
-    const redAnimating = useRef(false);
-    const redAnimationFrame = useRef<number | null>(null);
-    const redStartTime = useRef<number | null>(null);
-
-    const blueAnimating = useRef(false);
-    const blueAnimationFrame = useRef<number | null>(null);
-    const blueStartTime = useRef<number | null>(null);
-
-    const [redHoldProgress, setRedHoldProgress] = useState(0);
-    const [blueHoldProgress, setBlueHoldProgress] = useState(0);
-    const [redBetPlaced, setRedBetPlaced] = useState(false);
-    const [blueBetPlaced, setBlueBetPlaced] = useState(false);
 
     useEffect(() => {
         const fetchMatchStats = async () => {
@@ -168,6 +157,7 @@ export default function MatchPage(
 
             if (userData) {
                 setUserBalance(userData.points);
+                setBetValue(1);
             }
         };
 
@@ -184,170 +174,40 @@ export default function MatchPage(
         return parseFloat((1 / winProbability).toFixed(2));
     };
 
-    const handleBetChange = (x: number) => {
-        const newBetValue = clamp(x, 0.1, 0.9);
-        setBetValue(newBetValue);
-        const newBetAmount = Math.round(
-            ((newBetValue - 0.1) * (100 - 10)) / (0.9 - 0.1) + 10,
-        );
-        setBetAmount(newBetAmount);
+    const handleBetChange = (value: number) => {
+        const newBetValue = clamp(value, 1, userBalance);
+        setBetValue(Math.round(newBetValue));
     };
 
-    const handleBetHoldStart = useCallback((alliance: "red" | "blue") => {
-        if (alliance === "red") {
-            if (redAnimating.current) return;
-            redAnimating.current = true;
-            redStartTime.current = performance.now();
+    const handleBetClick = (alliance: "red" | "blue") => {
+        setSelectedAlliance(alliance);
+        setConfirmModalOpen(true);
+    };
 
-            const animate = (timestamp: number) => {
-                if (!redStartTime.current) redStartTime.current = timestamp;
-                const elapsed = timestamp - redStartTime.current;
-                redStartTime.current = timestamp;
-                const delta = (elapsed / 3000) * 100;
-
-                setRedHoldProgress((prevProgress) => {
-                    const newProgress = clamp(prevProgress + delta, 0, 100);
-                    if (newProgress >= 100) {
-                        redAnimating.current = false;
-                        setRedBetPlaced(true);
-                        setTimeout(() => {
-                            setRedHoldProgress(0);
-                            setRedBetPlaced(false);
-                        }, 500);
-
-                        console.log(
-                            `Bet placed on RED alliance for ${betAmount}`,
-                        );
-                        showNotification({
-                            title: "Bet Placed",
-                            message: (
-                                <>
-                                    You have placed a bet of{" "}
-                                    <IconCoins
-                                        size={16}
-                                        style={{ marginLeft: "2px" }}
-                                    />
-                                    {betAmount} on the RED alliance.
-                                </>
-                            ),
-                            color: "green",
-                        });
-                        return 0;
-                    }
-                    return newProgress;
-                });
-
-                if (redAnimating.current) {
-                    redAnimationFrame.current = requestAnimationFrame(animate);
-                }
-            };
-
-            redAnimationFrame.current = requestAnimationFrame(animate);
-        } else if (alliance === "blue") {
-            if (blueAnimating.current) return;
-            blueAnimating.current = true;
-            blueStartTime.current = performance.now();
-
-            const animate = (timestamp: number) => {
-                if (!blueStartTime.current) blueStartTime.current = timestamp;
-                const elapsed = timestamp - blueStartTime.current;
-                blueStartTime.current = timestamp;
-                const delta = (elapsed / 3000) * 100;
-
-                setBlueHoldProgress((prevProgress) => {
-                    const newProgress = clamp(prevProgress + delta, 0, 100);
-                    if (newProgress >= 100) {
-                        blueAnimating.current = false;
-                        setBlueBetPlaced(true);
-                        setTimeout(() => {
-                            setBlueHoldProgress(0);
-                            setBlueBetPlaced(false);
-                        }, 500);
-
-                        console.log(
-                            `Bet placed on BLUE alliance for ${betAmount}`,
-                        );
-                        showNotification({
-                            title: "Bet Placed",
-                            message: (
-                                <>
-                                    You have placed a bet of{" "}
-                                    <IconCoins
-                                        size={16}
-                                        style={{ marginLeft: "2px" }}
-                                    />
-                                    {betAmount} on the BLUE alliance.
-                                </>
-                            ),
-                            color: "green",
-                        });
-                        return 0;
-                    }
-                    return newProgress;
-                });
-
-                if (blueAnimating.current) {
-                    blueAnimationFrame.current = requestAnimationFrame(animate);
-                }
-            };
-
-            blueAnimationFrame.current = requestAnimationFrame(animate);
+    const handleConfirmBet = () => {
+        if (selectedAlliance) {
+            console.log(
+                `Bet placed on ${selectedAlliance.toUpperCase()} alliance for ${betValue}`,
+            );
+            showNotification({
+                title: "Bet Placed",
+                message: (
+                    <>
+                        You have placed a bet of{" "}
+                        <IconCoins
+                            size={16}
+                            style={{ marginLeft: "2px" }}
+                        />
+                        {betValue} on the {selectedAlliance.toUpperCase()}{" "}
+                        alliance.
+                    </>
+                ),
+                color: "green",
+            });
         }
-    }, [betAmount]);
-
-    const handleBetHoldEnd = useCallback((alliance: "red" | "blue") => {
-        if (alliance === "red") {
-            if (!redAnimating.current) return;
-            redAnimating.current = false;
-            if (redAnimationFrame.current) {
-                cancelAnimationFrame(redAnimationFrame.current);
-            }
-
-            const animateReverse = (timestamp: number) => {
-                if (!redStartTime.current) redStartTime.current = timestamp;
-                const elapsed = timestamp - redStartTime.current;
-                redStartTime.current = timestamp;
-                const delta = (elapsed / 3000) * 100;
-
-                setRedHoldProgress((prevProgress) => {
-                    const newProgress = clamp(prevProgress - delta, 0, 100);
-                    if (newProgress > 0) {
-                        redAnimationFrame.current = requestAnimationFrame(
-                            animateReverse,
-                        );
-                    }
-                    return newProgress;
-                });
-            };
-
-            redAnimationFrame.current = requestAnimationFrame(animateReverse);
-        } else if (alliance === "blue") {
-            if (!blueAnimating.current) return;
-            blueAnimating.current = false;
-            if (blueAnimationFrame.current) {
-                cancelAnimationFrame(blueAnimationFrame.current);
-            }
-
-            const animateReverse = (timestamp: number) => {
-                if (!blueStartTime.current) blueStartTime.current = timestamp;
-                const elapsed = timestamp - blueStartTime.current;
-                blueStartTime.current = timestamp;
-                const delta = (elapsed / 3000) * 100;
-
-                setBlueHoldProgress((prevProgress) => {
-                    const newProgress = clamp(prevProgress - delta, 0, 100);
-                    if (newProgress > 0) {
-                        blueAnimationFrame.current = requestAnimationFrame(
-                            animateReverse,
-                        );
-                    }
-                    return newProgress;
-                });
-            };
-
-            blueAnimationFrame.current = requestAnimationFrame(animateReverse);
-        }
-    }, []);
+        setConfirmModalOpen(false);
+        setSelectedAlliance(null);
+    };
 
     const isBettingAllowed = matchStats &&
         (matchStats.time * 1000 - currentTime > 5 * 60 * 1000);
@@ -361,9 +221,7 @@ export default function MatchPage(
                         <Skeleton height={32} width="60%" />
                         <Skeleton height={24} width={24} circle />
                     </Flex>
-                    <Flex align="center" justify="center">
-                        <Skeleton height={24} width="40%" mb="md" />
-                    </Flex>
+                    <Skeleton height={24} width="40%" mb="md" mx="auto" />
 
                     <Flex justify="space-around" align="center" mb="xl">
                         <Stack align="center" gap="xs">
@@ -383,43 +241,45 @@ export default function MatchPage(
                     </Flex>
 
                     <Flex justify="space-around" align="center" mb="xl">
-                        <Stack align="center" gap="xs">
-                            <Skeleton height={16} width={150} />
-                        </Stack>
-
-                        <Stack align="center" gap="xs">
-                            <Skeleton height={16} width={200} />
-                        </Stack>
-
-                        <Stack align="center" gap="xs">
-                            <Skeleton height={16} width={150} />
-                        </Stack>
+                        <Skeleton height={16} width={150} />
+                        <Skeleton height={16} width={200} />
+                        <Skeleton height={16} width={150} />
                     </Flex>
 
                     <Group mb="xl" justify="center">
-                        <Skeleton height={24} width={150} />
-                        <Skeleton height={24} width={150} />
+                        <Skeleton height={24} width={120} />
+                        <Skeleton height={24} width={120} />
+                        <Skeleton height={24} width={120} />
                     </Group>
 
-                    {/* New skeleton for betting slider */}
-                    <Skeleton height={40} radius="xl" mb="xl" />
+                    <Stack align="center" mb="xl">
+                        <Skeleton height={24} width={200} />
+                        <Group>
+                            <Skeleton height={36} width={120} />
+                            <Skeleton height={36} width={60} />
+                            <Skeleton height={36} width={60} />
+                            <Skeleton height={36} width={60} />
+                        </Group>
+                        <Skeleton height={16} width="80%" radius="xl" />
+                    </Stack>
 
-                    {/* New skeleton for betting buttons */}
                     <SimpleGrid cols={isMobile ? 1 : 2} m="xl">
-                        <Skeleton height={40} radius="md" />
-                        <Skeleton height={40} radius="md" />
+                        <Skeleton height={48} radius="md" />
+                        <Skeleton height={48} radius="md" />
                     </SimpleGrid>
 
                     <Grid>
                         <Grid.Col span={isMobile ? 12 : 6}>
                             <Skeleton height={24} width="40%" mb="md" />
-                            <Skeleton height={150} radius="md" mb="md" />
-                            <Skeleton height={150} radius="md" />
+                            {[1, 2, 3].map((i) => (
+                                <Skeleton key={i} height={120} radius="md" mb="md" />
+                            ))}
                         </Grid.Col>
                         <Grid.Col span={isMobile ? 12 : 6}>
                             <Skeleton height={24} width="40%" mb="md" />
-                            <Skeleton height={150} radius="md" mb="md" />
-                            <Skeleton height={150} radius="md" />
+                            {[1, 2, 3].map((i) => (
+                                <Skeleton key={i} height={120} radius="md" mb="md" />
+                            ))}
                         </Grid.Col>
                     </Grid>
                 </Paper>
@@ -457,22 +317,20 @@ export default function MatchPage(
 
                 <Title order={3} ta="center" mb="md">Summary</Title>
 
-                <Flex justify="space-around" align="center" mb="xl">
+                <Flex 
+                    direction={isMobile ? "column" : "row"} 
+                    justify="space-around" 
+                    align="center" 
+                    mb="xl"
+                    gap={isMobile ? "md" : "xs"}
+                >
                     <Stack align="center" gap="xs">
                         <Text size="xl" fw={700}>
-                            <span
-                                style={{
-                                    color: "var(--mantine-color-red-filled)",
-                                }}
-                            >
+                            <span style={{ color: "var(--mantine-color-red-filled)" }}>
                                 {matchStats.pred.red_score.toFixed(0)}
                             </span>
                             {" - "}
-                            <span
-                                style={{
-                                    color: "var(--mantine-color-blue-filled)",
-                                }}
-                            >
+                            <span style={{ color: "var(--mantine-color-blue-filled)" }}>
                                 {matchStats.pred.blue_score.toFixed(0)}
                             </span>
                         </Text>
@@ -483,16 +341,11 @@ export default function MatchPage(
                         <Text
                             size="xl"
                             fw={700}
-                            color={blueWinProb > matchStats.pred.red_win_prob
-                                ? "blue"
-                                : "red"}
+                            color={blueWinProb > matchStats.pred.red_win_prob ? "blue" : "red"}
                         >
                             {blueWinProb > matchStats.pred.red_win_prob
                                 ? `${(blueWinProb * 100).toFixed(0)}%`
-                                : `${
-                                    (matchStats.pred.red_win_prob * 100)
-                                        .toFixed(0)
-                                }%`}
+                                : `${(matchStats.pred.red_win_prob * 100).toFixed(0)}%`}
                         </Text>
                         <Text size="sm">Win Probability</Text>
                     </Stack>
@@ -500,21 +353,11 @@ export default function MatchPage(
                     {matchStats.result && (
                         <Stack align="center" gap="xs">
                             <Text size="xl" fw={700}>
-                                <span
-                                    style={{
-                                        color:
-                                            "var(--mantine-color-red-filled)",
-                                    }}
-                                >
+                                <span style={{ color: "var(--mantine-color-red-filled)" }}>
                                     {matchStats.result.red_score}
                                 </span>
                                 {" - "}
-                                <span
-                                    style={{
-                                        color:
-                                            "var(--mantine-color-blue-filled)",
-                                    }}
-                                >
+                                <span style={{ color: "var(--mantine-color-blue-filled)" }}>
                                     {matchStats.result.blue_score}
                                 </span>
                             </Text>
@@ -523,43 +366,34 @@ export default function MatchPage(
                     )}
                 </Flex>
 
-                <Flex justify="space-around" align="center" mb="xl">
+                <Flex 
+                    direction={isMobile ? "column" : "row"} 
+                    justify="space-around" 
+                    align="center" 
+                    mb="xl"
+                    gap={isMobile ? "md" : "xs"}
+                >
                     <Stack align="center" gap="xs">
-                        <Text fw={500}>
+                        <Text fw={500} ta="center">
                             Projected Winner:{" "}
-                            <span
-                                style={{
-                                    color: matchStats.pred.blue_score >
-                                            matchStats.pred.red_score
-                                        ? "var(--mantine-color-blue-filled)"
-                                        : "var(--mantine-color-red-filled)",
-                                }}
-                            >
-                                {matchStats.pred.blue_score >
-                                        matchStats.pred.red_score
-                                    ? "BLUE"
-                                    : "RED"}
+                            <span style={{
+                                color: matchStats.pred.blue_score > matchStats.pred.red_score
+                                    ? "var(--mantine-color-blue-filled)"
+                                    : "var(--mantine-color-red-filled)",
+                            }}>
+                                {matchStats.pred.blue_score > matchStats.pred.red_score ? "BLUE" : "RED"}
                             </span>
                         </Text>
                     </Stack>
 
                     <Stack align="center" gap="xs">
-                        <Text fw={500}>
+                        <Text fw={500} ta="center">
                             Payout:{" "}
-                            <span
-                                style={{
-                                    color: "var(--mantine-color-red-filled)",
-                                }}
-                            >
-                                Red{" "}
-                                {calculatePayout(matchStats.pred.red_win_prob)}x
-                            </span>{" "}
-                            |{" "}
-                            <span
-                                style={{
-                                    color: "var(--mantine-color-blue-filled)",
-                                }}
-                            >
+                            <span style={{ color: "var(--mantine-color-red-filled)" }}>
+                                Red {calculatePayout(matchStats.pred.red_win_prob)}x
+                            </span>
+                            {" | "}
+                            <span style={{ color: "var(--mantine-color-blue-filled)" }}>
                                 Blue {calculatePayout(blueWinProb)}x
                             </span>
                         </Text>
@@ -567,20 +401,14 @@ export default function MatchPage(
 
                     {matchStats.result && (
                         <Stack align="center" gap="xs">
-                            <Text fw={500}>
+                            <Text fw={500} ta="center">
                                 Actual Winner:{" "}
-                                <span
-                                    style={{
-                                        color: matchStats.result.red_score >
-                                                matchStats.result.blue_score
-                                            ? "var(--mantine-color-red-filled)"
-                                            : "var(--mantine-color-blue-filled)",
-                                    }}
-                                >
-                                    {matchStats.result.red_score >
-                                            matchStats.result.blue_score
-                                        ? "RED"
-                                        : "BLUE"}
+                                <span style={{
+                                    color: matchStats.result.red_score > matchStats.result.blue_score
+                                        ? "var(--mantine-color-red-filled)"
+                                        : "var(--mantine-color-blue-filled)",
+                                }}>
+                                    {matchStats.result.red_score > matchStats.result.blue_score ? "RED" : "BLUE"}
                                 </span>
                             </Text>
                         </Stack>
@@ -620,175 +448,151 @@ export default function MatchPage(
                 {!isBettingAllowed
                     ? (
                         <>
-                            <div className={classes.root}>
-                                <div className={classes.track} ref={ref}>
-                                    <div
-                                        className={classes.filled}
-                                        style={{
-                                            width: `calc(${
-                                                betValue * 100
-                                            }% - var(--thumb-width) / 2 - var(--thumb-offset) / 2)`,
-                                        }}
+                            <Container>
+                                <Text fw={700} mb="md" ta="center">
+                                    Balance:{" "}
+                                    <IconCoins
+                                        size={16}
+                                        style={{ marginRight: 4, marginLeft: 4 }}
+                                    />
+                                    {userBalance}
+                                </Text>
+                                <Group justify="center">
+                                    <NumberInput
+                                        value={betValue}
+                                        onChange={(value) =>
+                                            setBetValue(
+                                                clamp(
+                                                    Number(value),
+                                                    1,
+                                                    userBalance,
+                                                ),
+                                            )}
+                                        min={1}
+                                        max={userBalance}
+                                        step={1}
+                                        allowNegative={false}
+                                        allowDecimal={false}
+                                        thousandSeparator=" "
+                                        leftSection={<IconCoins size={16} />}
+                                    />
+                                    <Button
+                                        variant="outline"
+                                        color="gray"
+                                        onClick={() =>
+                                            setBetValue(
+                                                Math.min(
+                                                    betValue * 2,
+                                                    userBalance,
+                                                ),
+                                            )}
                                     >
-                                        <span
-                                            className={classes.label}
-                                            data-floating={labelFloating ||
-                                                undefined}
-                                            data-filled
-                                        >
-                                            <span className={classes.nowrap}>
-                                                <IconCoins
-                                                    size={16}
-                                                    style={{ marginRight: 4 }}
-                                                />
-                                                {betAmount}
-                                            </span>
-                                        </span>
-                                    </div>
-
-                                    <div
-                                        className={classes.empty}
-                                        style={{
-                                            width: `calc(${
-                                                (1 - betValue) * 100
-                                            }% - var(--thumb-width) / 2 - var(--thumb-offset) / 2)`,
-                                        }}
+                                        2x
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        color="gray"
+                                        onClick={() =>
+                                            setBetValue(
+                                                Math.max(
+                                                    Math.floor(betValue * 0.5),
+                                                    1,
+                                                ),
+                                            )}
                                     >
-                                        <span
-                                            className={classes.label}
-                                            data-floating={labelFloating ||
-                                                undefined}
-                                        >
-                                            <span className={classes.nowrap}>
-                                                <IconCoins
-                                                    size={16}
-                                                    style={{ marginRight: 4 }}
-                                                />
-                                                {userBalance - betAmount}
-                                            </span>
-                                        </span>
-                                    </div>
-
-                                    <div
-                                        className={classes.thumb}
-                                        style={{
-                                            left: `calc(${
-                                                betValue * 100
-                                            }% - var(--thumb-width) / 2)`,
-                                        }}
+                                        0.5x
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        color="gray"
+                                        onClick={() => setBetValue(userBalance)}
                                     >
-                                        <IconGripVertical stroke={1.5} />
-                                    </div>
-                                </div>
-                            </div>
+                                        Max
+                                    </Button>
+                                </Group>
+                                <Slider
+                                    value={betValue}
+                                    onChange={handleBetChange}
+                                    min={1}
+                                    max={userBalance}
+                                    step={1}
+                                    color="gray"
+                                    m="sm"
+                                />
+                            </Container>
 
                             <SimpleGrid cols={isMobile ? 1 : 2} m="xl">
-                                <Stack>
-                                    <Button
-                                        size="lg"
-                                        color={redBetPlaced ? "green" : "red"}
-                                        w="100%"
-                                        onMouseDown={() =>
-                                            handleBetHoldStart("red")}
-                                        onMouseUp={() =>
-                                            handleBetHoldEnd("red")}
-                                        onMouseLeave={() =>
-                                            handleBetHoldEnd("red")}
-                                        onTouchStart={() =>
-                                            handleBetHoldStart("red")}
-                                        onTouchEnd={() =>
-                                            handleBetHoldEnd("red")}
-                                        style={{
-                                            transition:
-                                                "background-color 0.3s, color 0.3s",
-                                            position: "relative",
-                                            overflow: "hidden",
-                                        }}
-                                    >
-                                        {redBetPlaced
-                                            ? <IconCheck size={24} />
-                                            : redHoldProgress > 0
-                                            ? (
-                                                <>
-                                                    <IconCoins size={24} />
-                                                    <span>{betAmount}</span>
-                                                    <IconChevronRight
-                                                        size={24}
-                                                    />
-                                                    <IconCoins size={24} />
-                                                    <span>
-                                                        {(calculatePayout(
-                                                            matchStats.pred
-                                                                .red_win_prob,
-                                                        ) * betAmount).toFixed(
-                                                            0,
-                                                        )}
-                                                    </span>
-                                                </>
-                                            )
-                                            : (
-                                                "Bet Red"
-                                            )}
-                                    </Button>
-                                    <Progress
-                                        value={redHoldProgress}
-                                        color="red"
-                                        size="sm"
-                                    />
-                                </Stack>
-                                <Stack>
-                                    <Button
-                                        size="lg"
-                                        color={blueBetPlaced ? "green" : "blue"}
-                                        w="100%"
-                                        onMouseDown={() =>
-                                            handleBetHoldStart("blue")}
-                                        onMouseUp={() =>
-                                            handleBetHoldEnd("blue")}
-                                        onMouseLeave={() =>
-                                            handleBetHoldEnd("blue")}
-                                        onTouchStart={() =>
-                                            handleBetHoldStart("blue")}
-                                        onTouchEnd={() =>
-                                            handleBetHoldEnd("blue")}
-                                        style={{
-                                            transition:
-                                                "background-color 0.3s, color 0.3s",
-                                            position: "relative",
-                                            overflow: "hidden",
-                                        }}
-                                    >
-                                        {blueBetPlaced
-                                            ? <IconCheck size={24} />
-                                            : blueHoldProgress > 0
-                                            ? (
-                                                <>
-                                                    <IconCoins size={24} />
-                                                    <span>{betAmount}</span>
-                                                    <IconChevronRight
-                                                        size={24}
-                                                    />
-                                                    <IconCoins size={24} />
-                                                    <span>
-                                                        {(calculatePayout(
-                                                            blueWinProb,
-                                                        ) * betAmount).toFixed(
-                                                            0,
-                                                        )}
-                                                    </span>
-                                                </>
-                                            )
-                                            : (
-                                                "Bet Blue"
-                                            )}
-                                    </Button>
-                                    <Progress
-                                        value={blueHoldProgress}
-                                        color="blue"
-                                        size="sm"
-                                    />
-                                </Stack>
+                                <Button
+                                    size="lg"
+                                    color="red"
+                                    w="100%"
+                                    onClick={() => handleBetClick("red")}
+                                >
+                                    Bet Red
+                                </Button>
+                                <Button
+                                    size="lg"
+                                    color="blue"
+                                    w="100%"
+                                    onClick={() => handleBetClick("blue")}
+                                >
+                                    Bet Blue
+                                </Button>
                             </SimpleGrid>
+
+                            <Modal
+                                opened={confirmModalOpen}
+                                onClose={() => setConfirmModalOpen(false)}
+                                title="Confirm Bet"
+                            >
+                                {selectedAlliance && (
+                                    <>
+                                        <Text>
+                                            Are you sure you want to place a bet
+                                            of{" "}
+                                            <IconCoins
+                                                size={16}
+                                                style={{ marginRight: 4, marginLeft: 4 }}
+                                            />
+                                            {betValue} on the{" "}
+                                            <span style={{ color: `var(--mantine-color-${selectedAlliance}-filled)` }}>
+                                                {selectedAlliance.toUpperCase()}
+                                            </span>
+                                            {" "}
+                                            alliance?
+                                        </Text>
+                                        <Text mt="md">
+                                            Potential payout:{" "}
+                                            <IconCoins
+                                                size={16}
+                                                style={{ marginRight: 4, marginLeft: 4 }}
+                                            />
+                                            {(calculatePayout(
+                                                selectedAlliance === "red"
+                                                    ? matchStats.pred
+                                                        .red_win_prob
+                                                    : blueWinProb,
+                                            ) * betValue).toFixed(0)}
+                                        </Text>
+                                        <Group mt="xl">
+                                            <Button
+                                                variant="outline"
+                                                color="gray"
+                                                onClick={() =>
+                                                    setConfirmModalOpen(false)}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                color={selectedAlliance}
+                                                onClick={handleConfirmBet}
+                                            >
+                                                Confirm Bet
+                                            </Button>
+                                        </Group>
+                                    </>
+                                )}
+                            </Modal>
                         </>
                     )
                     : (
@@ -797,6 +601,7 @@ export default function MatchPage(
                         </Text>
                     )}
 
+                {/* Alliances Display */}
                 <Grid>
                     <Grid.Col span={isMobile ? 12 : 6}>
                         <Title order={3}>Red Alliance</Title>
@@ -829,7 +634,7 @@ export default function MatchPage(
                                         <Text>
                                             Current EPA:{" "}
                                             {teamInfo[team].norm_epa.current
-                                                .toFixed(2)}
+                                                .toFixed(0)}
                                         </Text>
                                     </>
                                 )}
@@ -867,7 +672,7 @@ export default function MatchPage(
                                         <Text>
                                             Current EPA:{" "}
                                             {teamInfo[team].norm_epa.current
-                                                .toFixed(2)}
+                                                .toFixed(0)}
                                         </Text>
                                     </>
                                 )}
