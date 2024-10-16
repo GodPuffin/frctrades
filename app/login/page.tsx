@@ -1,11 +1,28 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { login, signup } from "./actions";
 import { Button, Container, Group, TextInput, Title } from "@mantine/core";
 import GitHubSignInButton from "@/components/Auth/GitHubSignInButton";
 import { notifications } from "@mantine/notifications";
+import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const supabase = createClient();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        router.push("/market");
+      }
+    };
+
+    checkUser();
+  }, [router, supabase.auth]);
+
   const handleSignup = async (formData: FormData) => {
     const result = await signup(formData);
     if (result?.success) {

@@ -46,7 +46,16 @@ export default async function LeaderboardPage() {
           <Link href={`/user/${user.handle}`} key={user.rank} style={{ textDecoration: 'none', color: 'inherit' }}>
             <Paper withBorder radius="md" p="md" style={{ cursor: 'pointer' }}>
               <Center mb="md">
-                <ThemeIcon size="xl" radius="md" variant="gradient">
+                <ThemeIcon
+                  size="xl"
+                  radius="md"
+                  variant="gradient"
+                  gradient={{
+                    from: user.rank === 1 ? '#fcba03' : user.rank === 2 ? 'silver' : '#cb7e35',
+                    to: user.rank === 1 ? '#ffd700' : user.rank === 2 ? '#e8e8e8' : '#e0ac69',
+                    deg: 45
+                  }}
+                >
                   <IconCrown size={28} />
                 </ThemeIcon>
               </Center>
