@@ -9,7 +9,7 @@ export default function ErrorPage() {
         We couldn't process your request. Please try again later.
       </Text>
       <Button
-        variant="gradient"
+        variant="filled"
         size="xl"
         radius="lg"
         component={Link}

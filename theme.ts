@@ -3,16 +3,16 @@
 import { createTheme, MantineColorsTuple } from "@mantine/core";
 
 const myColor: MantineColorsTuple = [
-  "#f2f0ff",
-  "#e0dff2",
-  "#bfbdde",
-  "#9b98ca",
-  "#7d79ba",
-  "#6a65b0",
-  "#605bac",
-  "#504c97",
-  "#464388",
-  "#3b3979"
+  "#f1f4fe",
+  "#e4e6ed",
+  "#c8cad3",
+  "#a9adb9",
+  "#9094a3",
+  "#7f8496",
+  "#777c91",
+  "#656a7e",
+  "#595e72",
+  "#4a5167"
 ]
 
 const theme = createTheme({
@@ -24,8 +24,8 @@ const theme = createTheme({
   primaryShade: 6,
   fontFamily: "Sora, sans-serif",
   defaultGradient: {
-    from: "grape",
-    to: "violet",
+    from: "red",
+    to: "blue",
   },
   white: "#f5f5f5",
   black: "#0B1215",

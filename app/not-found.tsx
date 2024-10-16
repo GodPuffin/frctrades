@@ -9,7 +9,7 @@ export default function NotFound() {
         Oops! The page you are looking for does not exist.
       </Text>
       <Button
-        variant="gradient"
+        variant="filled"
         size="xl"
         radius="lg"
         component={Link}
