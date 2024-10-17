@@ -134,7 +134,7 @@ export default async function PortfolioPage() {
                         {matchInfoMap[bet.match_key].event_name},{" "}
                         {matchInfoMap[bet.match_key].match_name}
                       </Text>
-                      <Badge color={bet.alliance === "red" ? "red" : "blue"}>
+                      <Badge color={bet.alliance}>
                         {bet.alliance.toUpperCase()} ALLIANCE
                       </Badge>
                     </Group>

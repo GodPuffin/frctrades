@@ -54,7 +54,7 @@ export default function MarketPage() {
 
   useEffect(() => {
     loadMore(true);
-  }, [selectedTeams, selectedEvents]); // **Updated Dependency Array**
+  }, [selectedTeams, selectedEvents]);
 
   useEffect(() => {
     if (entry?.isIntersecting) {
@@ -92,8 +92,8 @@ export default function MarketPage() {
             transitionProps: { transition: "pop", duration: 200 },
           }}
           limit={5}
-          value={selectedEvents} // **Bind Value to State**
-          onChange={(value) => setSelectedEvents(value)} // **Handle Events Change**
+          value={selectedEvents}
+          onChange={(value) => setSelectedEvents(value)}
         />
       </SimpleGrid>
       <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
