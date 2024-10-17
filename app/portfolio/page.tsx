@@ -113,11 +113,11 @@ export default async function PortfolioPage() {
   return (
     <Container size="lg" p="xl">
       <Title mb="xl">Portfolio</Title>
-        <Title order={2} ta="center" mb="xl">
-          Balance -
-          <IconCoins size={32} style={{ marginLeft: "10px" }} />
-          {userData.points}
-        </Title>
+      <Title order={2} ta="center" mb="xl">
+        Balance -
+        <IconCoins size={32} style={{ marginLeft: "10px" }} />
+        {userData.points}
+      </Title>
       {bets && bets.length > 0
         ? (
           <Stack gap="md">
@@ -160,13 +160,18 @@ export default async function PortfolioPage() {
                       >
                         x {bet.payout_multiplier}
                       </Text>
-                      <Text c={bet.status === "won" ? undefined : "dimmed"}>
+                      <Text
+                        c={bet.status === "won" ? undefined : "dimmed"}
+                        style={bet.status === "lost"
+                          ? { textDecoration: "line-through" }
+                          : undefined}
+                      >
                         <IconCoins size={16} style={{ display: "inline" }} />
                         {(bet.amount * bet.payout_multiplier).toFixed(0)}
                       </Text>
                     </Group>
                   </Group>
-                  <Text size="xs" color="dimmed" mt="xs">
+                  <Text size="xs" c="dimmed" mt="xs">
                     Placed on: {new Date(bet.created_at).toLocaleString()}
                   </Text>
                 </Paper>
