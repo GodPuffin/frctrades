@@ -10,7 +10,6 @@ import {
   Group,
   NavLink,
   SimpleGrid,
-  Text,
   useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -18,9 +17,7 @@ import { AvatarMenu } from "../UI/AvatarMenu";
 import {
   IconBriefcase2,
   IconBuildingStore,
-  IconCalculator,
-  IconChartDots2,
-  IconHome,
+  IconGraph,
   IconLogin,
   IconLogout,
   IconSunMoon,
@@ -28,7 +25,6 @@ import {
   IconTrophy,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { notifications } from "@mantine/notifications";
@@ -61,7 +57,7 @@ export function Navbar(
               component={Link}
               href="/"
             >
-              <IconChartDots2 />
+              <IconGraph />
             </ActionIcon>
             <Group ml="xl" gap="sm" visibleFrom="sm">
               {/* <Button variant="subtle" radius="lg" component={Link} href="/home" leftSection={<IconHome />}>Home</Button> */}
