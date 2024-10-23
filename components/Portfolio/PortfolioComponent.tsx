@@ -115,13 +115,14 @@ import {
                   </Group>
                   <Group justify="center" align="center">
                     <Group gap="xs">
-                      <Text>
+                      <Text size="xl">
                         <IconCoins size={16} style={{ display: "inline" }} />
                         {bet.amount}
                       </Text>
                       <Text
                         color={bet.alliance === "red" ? "red" : "blue"}
                         fw={700}
+                        size="xl"
                       >
                         x {bet.payout_multiplier}
                       </Text>
@@ -130,6 +131,7 @@ import {
                         style={bet.status === "lost"
                           ? { textDecoration: "line-through" }
                           : undefined}
+                        size="xl"
                       >
                         <IconCoins size={16} style={{ display: "inline" }} />
                         {(bet.amount * bet.payout_multiplier).toFixed(0)}
